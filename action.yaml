@@ -12,14 +12,25 @@ runs:
     - name: Install Epi CLI on Linux
       if: runner.os == 'linux'
       shell: bash
-      run: $GITHUB_ACTION_PATH/epi-cli-install.sh
+      run: |
+        curl -L "https://github.com/tuyen-at-work/dev-tools/releases/download/linux/epi-cli-x86_64-unknown-linux-gnu.7z" -o epi-cli.7z
+        7z x epi-cli.7z -bsp0 -bso0
+        rm epi-cli.7z
+        mkdir ~/bin
+        mv ./epi ~/bin/
+        chmod +x ~/bin/epi
+        echo "~/bin" >> $GITHUB_PATH
 
     - name: Install Epi CLI on Windows
       if: runner.os == 'windows'
       shell: pwsh
       run: |
-        $script = Join-Path $env:GITHUB_ACTION_PATH 'epi-cli-install.ps1'
-        & $script
+        Invoke-WebRequest -Uri "https://github.com/tuyen-at-work/dev-tools/releases/download/windows/epi-cli-x86_64-pc-windows-msvc.7z" -OutFile "epi-cli.7z"
+        7z x epi-cli.7z -bsp0 -bso0
+        Remove-Item epi-cli.7z
+        New-Item -ItemType Directory -Force -Path $env:USERPROFILE\bin | Out-Null
+        Move-Item ./epi.exe $env:USERPROFILE/bin/
+        echo "$env:USERPROFILE/bin" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_PATH
 
     - name: Check Epi CLI version
       run: epi --version
