@@ -1,0 +1,26 @@
+name: install-epi-cli
+description: Install Epi CLI
+author: Tuyen Pham
+
+branding:
+  icon: search
+  color: purple
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Epi CLI on Linux
+      if: runner.os == 'linux'
+      shell: bash
+      run: $GITHUB_ACTION_PATH/epi-cli-install.sh
+      shell: bash
+
+    - name: Install Epi CLI on Windows
+      if: runner.os == 'windows'
+      shell: pwsh
+      run: |
+        $script = Join-Path $env:GITHUB_ACTION_PATH 'epi-cli-install.ps1'
+        & $script
+
+    - name: Check Epi CLI version
+      run: epi --version
