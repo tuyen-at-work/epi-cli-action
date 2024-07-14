@@ -13,7 +13,10 @@ runs:
       if: runner.os == 'linux'
       shell: bash
       run: |
-        curl -L "https://github.com/tuyen-at-work/dev-tools/releases/download/linux/epi-cli-x86_64-unknown-linux-gnu.7z" -o epi-cli.7z --silent
+        curl \
+          -L "https://github.com/tuyen-at-work/dev-tools/releases/download/linux/epi-cli-x86_64-unknown-linux-gnu.7z" \
+          -o epi-cli.7z \
+          --silent
         7z x epi-cli.7z -bsp0 -bso0
         rm epi-cli.7z
         mkdir ~/bin
@@ -25,7 +28,9 @@ runs:
       if: runner.os == 'windows'
       shell: pwsh
       run: |
-        Invoke-WebRequest -Uri "https://github.com/tuyen-at-work/dev-tools/releases/download/windows/epi-cli-x86_64-pc-windows-msvc.7z" -OutFile "epi-cli.7z"
+        Invoke-WebRequest `
+          -Uri "https://github.com/tuyen-at-work/dev-tools/releases/download/windows/epi-cli-x86_64-pc-windows-msvc.7z" `
+          -OutFile "epi-cli.7z"
         7z x epi-cli.7z -bsp0 -bso0
         Remove-Item epi-cli.7z
         New-Item -ItemType Directory -Force -Path "$env:USERPROFILE/bin" | Out-Null
