@@ -19,10 +19,10 @@ runs:
           --silent
         7z x epi-cli.7z -bsp0 -bso0
         rm epi-cli.7z
-        mkdir ~/bin
-        mv ./epi ~/bin/
-        chmod +x ~/bin/epi
-        echo "~/bin" >> $GITHUB_PATH
+        mkdir ~/epi-cli-bin
+        mv ./epi ~/epi-cli-bin/
+        chmod +x ~/epi-cli-bin/epi
+        echo "~/epi-cli-bin" >> $GITHUB_PATH
 
     - name: Install Epi CLI on Windows
       if: runner.os == 'windows'
@@ -33,9 +33,9 @@ runs:
           -OutFile "epi-cli.7z"
         7z x epi-cli.7z -bsp0 -bso0
         Remove-Item epi-cli.7z
-        New-Item -ItemType Directory -Force -Path "$env:USERPROFILE/bin" | Out-Null
-        Move-Item ./epi.exe $env:USERPROFILE/bin/
-        echo "$env:USERPROFILE/bin" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_PATH
+        New-Item -ItemType Directory -Force -Path "$env:USERPROFILE/epi-cli-bin" | Out-Null
+        Move-Item ./epi.exe $env:USERPROFILE/epi-cli-bin/
+        echo "$env:USERPROFILE/epi-cli-bin" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_PATH
 
     - name: Check Epi CLI version
       run: epi --version
