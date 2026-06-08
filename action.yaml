@@ -1,6 +1,6 @@
 name: install-epi-cli
 description: Install Epi CLI
-author: Tuyen Pham
+author: Epi Pham
 
 branding:
   icon: search
@@ -9,34 +9,79 @@ branding:
 runs:
   using: 'composite'
   steps:
-    - name: Install Epi CLI on Linux
-      if: runner.os == 'linux'
+    - name: Reject unsupported OS
+      if: runner.os != 'Linux' && runner.os != 'Windows' && runner.os != 'macOS'
       shell: bash
       run: |
-        curl \
-          -L "https://github.com/tuyen-at-work/dev-tools/releases/download/linux/epi-cli-x86_64-unknown-linux-gnu.7z" \
-          -o epi-cli.7z \
-          --silent
-        7z x epi-cli.7z -bsp0 -bso0
-        rm epi-cli.7z
-        mkdir ~/epi-cli-bin
-        mv ./epi ~/epi-cli-bin/
-        chmod +x ~/epi-cli-bin/epi
-        echo "~/epi-cli-bin" >> $GITHUB_PATH
+        echo "::error::epi-cli-action does not support ${{ runner.os }}"
+        exit 1
+
+    - name: Install Epi CLI on Linux
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        set -euo pipefail
+        tmp="$(mktemp -d)"
+        curl --fail --show-error --location \
+             --retry 5 --retry-all-errors --retry-delay 2 \
+             -o "$tmp/epi-cli.7z" \
+             "https://github.com/tuyen-at-work/dev-tools/releases/download/linux/epi-cli-x86_64-unknown-linux-gnu.7z"
+        7z x "$tmp/epi-cli.7z" -o"$tmp" -bsp0 -bso0
+        mkdir -p "$HOME/epi-cli-bin"
+        install -m 0755 "$tmp/epi" "$HOME/epi-cli-bin/epi"
+        rm -rf "$tmp"
+        echo "$HOME/epi-cli-bin" >> "$GITHUB_PATH"
+
+    - name: Install Epi CLI on macOS
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        set -euo pipefail
+        case "${RUNNER_ARCH}" in
+          ARM64) target="aarch64-apple-darwin" ;;
+          X64)   target="x86_64-apple-darwin" ;;
+          *)
+            echo "::error::Unsupported macOS arch: ${RUNNER_ARCH}"
+            exit 1
+            ;;
+        esac
+        tmp="$(mktemp -d)"
+        curl --fail --show-error --location \
+             --retry 5 --retry-all-errors --retry-delay 2 \
+             -o "$tmp/epi-cli.7z" \
+             "https://github.com/tuyen-at-work/dev-tools/releases/download/macos/epi-cli-${target}.7z"
+        7z x "$tmp/epi-cli.7z" -o"$tmp" -bsp0 -bso0
+        mkdir -p "$HOME/epi-cli-bin"
+        install -m 0755 "$tmp/epi" "$HOME/epi-cli-bin/epi"
+        rm -rf "$tmp"
+        echo "$HOME/epi-cli-bin" >> "$GITHUB_PATH"
 
     - name: Install Epi CLI on Windows
-      if: runner.os == 'windows'
+      if: runner.os == 'Windows'
       shell: pwsh
       run: |
+        $ErrorActionPreference = 'Stop'
+        $ProgressPreference = 'SilentlyContinue'
+        $tmp = Join-Path $env:RUNNER_TEMP "epi-cli-install"
+        New-Item -ItemType Directory -Force -Path $tmp | Out-Null
         Invoke-WebRequest `
           -Uri "https://github.com/tuyen-at-work/dev-tools/releases/download/windows/epi-cli-x86_64-pc-windows-msvc.7z" `
-          -OutFile "epi-cli.7z"
-        7z x epi-cli.7z -bsp0 -bso0
-        Remove-Item epi-cli.7z
-        New-Item -ItemType Directory -Force -Path "$env:USERPROFILE/epi-cli-bin" | Out-Null
-        Move-Item ./epi.exe $env:USERPROFILE/epi-cli-bin/
-        echo "$env:USERPROFILE/epi-cli-bin" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_PATH
+          -OutFile "$tmp/epi-cli.7z" `
+          -MaximumRetryCount 5 `
+          -RetryIntervalSec 5
+        7z x "$tmp/epi-cli.7z" "-o$tmp" -bsp0 -bso0
+        $binDir = Join-Path $env:USERPROFILE "epi-cli-bin"
+        New-Item -ItemType Directory -Force -Path $binDir | Out-Null
+        Move-Item -Force "$tmp/epi.exe" (Join-Path $binDir "epi.exe")
+        Remove-Item -Recurse -Force $tmp
+        Add-Content -Path $env:GITHUB_PATH -Value $binDir
 
-    - name: Check Epi CLI version
-      run: epi --version
+    - name: Check Epi CLI version (Linux/macOS)
+      if: runner.os == 'Linux' || runner.os == 'macOS'
       shell: bash
+      run: epi --version
+
+    - name: Check Epi CLI version (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: epi --version
